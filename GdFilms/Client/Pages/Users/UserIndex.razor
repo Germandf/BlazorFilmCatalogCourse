@@ -1,0 +1,65 @@
+﻿@page "/usuarios"
+@inject IRepository Repository  
+@inject IShowMessages ShowMessages
+
+<h3>Indice Usuarios</h3>
+
+<GenericList TList="_users">
+    <ItemsToShowComplete>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Usuario</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in _users)
+                {
+                    <tr>
+                        <td>
+                            <a href="/usuarios/editar/@user.UserId" class="btn btn-success">Editar</a>
+                        </td>
+                        <td>
+                            @user.Email
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </ItemsToShowComplete>
+</GenericList>
+
+<Pagination CurrentPage="_currentPage" ChangeSelectedPage="ChangeSelectedPage" TotalPages="_totalPages"/>
+
+@code {
+
+    private List<UserDTO> _users;
+    private int _currentPage = 1;
+    private int _totalPages;
+
+    protected async override Task OnInitializedAsync()
+    {
+        await GetUsers();
+    }
+
+    private async Task ChangeSelectedPage(int page)
+    {
+        _currentPage = page;
+        await GetUsers(page);
+    }
+
+    private async Task GetUsers(int page = 1)
+    {
+        var httpResponse = await Repository.Get<List<UserDTO>>($"api/usuarios?page={page}");
+        if (httpResponse.Error)
+        {
+            await ShowMessages.ShowErrorMessage(await httpResponse.GetBody());
+        }
+        else
+        {
+            _users = httpResponse.Response;
+        }
+    }
+
+}

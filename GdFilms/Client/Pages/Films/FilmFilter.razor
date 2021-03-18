@@ -1,0 +1,149 @@
+﻿@page "/peliculas/buscar"
+@inject IRepository Repository
+@inject NavigationManager NavigationManager
+
+<h3>Filtrar Películas</h3>
+
+<div class="form-inline">
+    <div class="form-group mb-2">
+        <input @bind-value="_title" @bind-value:event="oninput"
+               @onkeypress="(KeyboardEventArgs e) => TitleKeyPress(e)"
+               type="text" class="form-control" placeholder="Titulo película" />
+    </div>
+    <div class="form-group mb-2">
+        <select class="form-control" @bind="_genreId">
+            <option value="0">Seleccione un género</option>
+            @foreach (var genre in _genres)
+            {
+                <option value="@genre.Id">@genre.Name</option>
+            }
+        </select>
+    </div>
+    <div class="form-group mb-2">
+        <input type="checkbox" class="form-check-input" id="upcomingReleases" @bind="_upcomingReleases" />
+        <label class="form-check-label" for="upcomingReleases">Futuros estrenos</label>
+    </div>
+    <div class="form-group mb-2">
+        <input type="checkbox" class="form-check-input" id="onBillboard" @bind="_onBillboard" />
+        <label class="form-check-label" for="onBillboard">En cartelera</label>
+    </div>
+    <div class="form-group mb-2">
+        <input type="checkbox" class="form-check-input" id="mostVoted" @bind="_mostVoted" />
+        <label class="form-check-label" for="mostVoted">Más votadas</label>
+    </div>
+    <button type="button" class="btn btn-primary mb-2 mx-sm-3" @onclick="SearchFilteredFilms">Filtrar</button>
+    <button type="button" class="btn btn-danger mb-2" @onclick="CleanFilters">Limpiar</button>
+</div>
+
+<FilmCatalog Films="_filteredFilms" />
+
+<Pagination CurrentPage="_currentPage" TotalPages="_totalPages" ChangeSelectedPage="ChangeSelectedPage" />
+
+@code {
+
+    private List<Film> _filteredFilms;
+    private string _title = "";
+    private string _genreId = "";
+    private bool _upcomingReleases = false;
+    private bool _onBillboard = false;
+    private bool _mostVoted = false;
+    private int _currentPage = 1;
+    private List<Genre> _genres = new List<Genre>();
+    private Dictionary<string, string> _queryStrings = new Dictionary<string, string>();
+    private int _totalPages;
+
+    protected async override Task OnInitializedAsync()
+    {
+        await GetGenres();
+        var url = NavigationManager.Uri;
+        var queries = NavigationManager.GetQueryStrings(url);
+        if (queries == null)
+        {
+            await GetFilteredFilmsFromDB(string.Empty);
+        }
+        else
+        {
+            _queryStrings = queries;
+            FillInputValues();
+            var queryStrings = url.Split(new string[] { "?" }, StringSplitOptions.None)[1];
+            await GetFilteredFilmsFromDB(queryStrings);
+        }
+    }
+
+    private async Task GetGenres()
+    {
+        var httpResponse = await Repository.Get<List<Genre>>("api/generos");
+        _genres = httpResponse.Response;
+    }
+
+    private async Task SearchFilteredFilms()
+    {
+        var queryStrings = GenerateQueryStrings();
+        NavigationManager.NavigateTo("/peliculas/buscar?" + queryStrings);
+        await GetFilteredFilmsFromDB(queryStrings);
+    }
+
+    private async Task GetFilteredFilmsFromDB(string queryStrings)
+    {
+        var httpResponse = await Repository.Get<List<Film>>("api/peliculas/filtrar?" + queryStrings);
+        _totalPages = int.Parse(httpResponse.HttpResponseMessage.Headers.GetValues("totalPages").FirstOrDefault());
+        _filteredFilms = httpResponse.Response;
+    }
+
+    private string GenerateQueryStrings()
+    {
+        if (_queryStrings == null) _queryStrings = new Dictionary<string, string>();
+        _queryStrings["title"] = _title;
+        _queryStrings["genreid"] = _genreId;
+        _queryStrings["onbillboard"] = _onBillboard.ToString();
+        _queryStrings["upcomingreleases"] = _upcomingReleases.ToString();
+        _queryStrings["mostvoted"] = _mostVoted.ToString();
+        _queryStrings["page"] = _currentPage.ToString();
+        var defaultValues = new List<string>() { "false", "", "0" };
+        return string.Join("&", _queryStrings
+            .Where(x => !defaultValues.Contains(x.Value.ToLower()))
+            .Select(x => $"{x.Key}={System.Web.HttpUtility.UrlEncode(x.Value)}").ToArray());
+    }
+
+    private async Task ChangeSelectedPage(int page)
+    {
+        _currentPage = page;
+        await SearchFilteredFilms();
+    }
+
+    private async Task TitleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchFilteredFilms();
+        }
+    }
+
+    private void FillInputValues()
+    {
+        if (_queryStrings.ContainsKey("title"))
+            _title = _queryStrings["title"];
+        if (_queryStrings.ContainsKey("genreid"))
+            _genreId = _queryStrings["genreid"];
+        if (_queryStrings.ContainsKey("onbillboard"))
+            bool.TryParse(_queryStrings["onbillboard"], out _onBillboard);
+        if (_queryStrings.ContainsKey("upcomingreleases"))
+            bool.TryParse(_queryStrings["upcomingreleases"], out _upcomingReleases);
+        if (_queryStrings.ContainsKey("mostvoted"))
+            bool.TryParse(_queryStrings["mostvoted"], out _mostVoted);
+        if (_queryStrings.ContainsKey("page"))
+            int.TryParse(_queryStrings["page"], out _currentPage);
+    }
+
+    private async Task CleanFilters()
+    {
+        _title = "";
+        _genreId = "";
+        _upcomingReleases = false;
+        _onBillboard = false;
+        _mostVoted = false;
+        _currentPage = 1;
+        await SearchFilteredFilms();
+    }
+
+}

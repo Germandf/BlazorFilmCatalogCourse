@@ -1,0 +1,30 @@
+﻿<div class="col-12 mb-3 col-md-6 col-xl-4">
+    <div class="card mx-2" style="width: 18rem;">
+        <a href="@_filmUrl"><img src="@Film.Image" class="card-img-top" alt="Film's image"></a>
+        <div class="card-body">
+            <a href="@_filmUrl"><h5 class="card-title">@Film.ShortTitle</h5></a>
+            <p class="card-text">@Film.ReleaseDate.Value.ToString("dd MMM yyyy")</p>
+            <AuthorizeView Roles="admin">
+                <Authorized>
+                    <a href="peliculas/editar/@Film.Id" class="btn btn-primary">Editar</a>
+                    <button @onclick="() => Delete.InvokeAsync(Film)" type="button" class="btn btn-danger">Eliminar</button>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public Film Film { get; set; }
+    [Parameter]
+    public EventCallback<Film> Delete { get; set; }
+    private string _filmUrl = String.Empty;
+
+    protected override void OnInitialized()
+    {
+        _filmUrl = $"peliculas/{Film?.Id}/{Film?.Title?.Replace(" ", "-")}";
+    }
+
+}

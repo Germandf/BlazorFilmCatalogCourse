@@ -1,0 +1,57 @@
+﻿@page "/generos/editar/{Id:int}"
+@inject IRepository Repository
+@inject IShowMessages ShowMessages
+@inject NavigationManager NavigationManager
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Editar Género</h3>
+
+@if (_genre == null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <GenreForm Genre="_genre" OnValidSubmit="Edit" />
+}
+
+@code {
+
+    [Parameter]
+    public int Id { get; set; }
+    private Genre _genre;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var httpResponse = await Repository.Get<Genre>($"api/generos/{Id}");
+        if (httpResponse.Error)
+        {
+            if (httpResponse.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                NavigationManager.NavigateTo("generos");
+            }
+            else
+            {
+                await ShowMessages.ShowErrorMessage(await httpResponse.GetBody());
+            }
+        }
+        else
+        {
+            _genre = httpResponse.Response;
+        }
+    }
+
+    private async Task Edit()
+    {
+        var httpResponse = await Repository.Put("api/generos", _genre);
+        if (httpResponse.Error)
+        {
+            await ShowMessages.ShowErrorMessage(await httpResponse.GetBody());
+        }
+        else
+        {
+            NavigationManager.NavigateTo("generos");
+        }
+    }
+
+}

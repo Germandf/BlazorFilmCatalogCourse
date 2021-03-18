@@ -1,0 +1,48 @@
+﻿@page "/peliculas/crear"
+@inject NavigationManager NavigationManager
+@inject IRepository Repository
+@inject IShowMessages ShowMessages
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Agregar Película</h3>
+
+@if (_showForm)
+{
+    <FilmForm Film="_film" OnValidSubmit="Create" NotSelectedGenres="NotSelectedGenres" />
+}
+else
+{
+    <p>Cargando...</p>
+}
+
+
+
+@code {
+
+    private Film _film = new Film();
+    private List<Genre> NotSelectedGenres = new List<Genre>();
+    private bool _showForm = false;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var httpResponse = await Repository.Get<List<Genre>>("api/generos");
+        NotSelectedGenres = httpResponse.Response;
+        _showForm = true;
+    }
+
+    private async Task Create()
+    {
+        var httpResponse = await Repository.Post<Film, int>("api/peliculas", _film);
+        if (httpResponse.Error)
+        {
+            var errorMessage = await httpResponse.GetBody();
+            await ShowMessages.ShowErrorMessage(errorMessage);
+        }
+        else
+        {
+            var filmId = httpResponse.Response;
+            NavigationManager.NavigateTo($"/peliculas/{filmId}/{_film.Title.Replace(" ", "-")}");
+        }
+    }
+
+}

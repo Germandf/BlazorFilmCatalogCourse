@@ -1,0 +1,49 @@
+﻿@inject IRepository Repository
+@inject IShowMessages ShowMessages
+
+<div class="row">
+    <GenericList TList="Films">
+        <LoadingItems>
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden"></span>
+            </div>
+        </LoadingItems>
+        <NoItemsToShow>
+            <h4>No hay películas para mostrar</h4>
+        </NoItemsToShow>
+        <ItemsToShow Context="film">
+            <FilmCover Film="film" Delete="Delete" @key="film.Id" />
+        </ItemsToShow>
+    </GenericList>
+</div>
+
+<ConfirmationModal @ref="_confirmationModal" Title="Confirmar">
+    <p>La película se eliminará, ¿está seguro?</p>
+</ConfirmationModal>
+
+@code {
+
+    [Parameter]
+    public List<Film> Films { get; set; }
+
+    private ConfirmationModal _confirmationModal = new ConfirmationModal();
+
+    private void Delete(Film film)
+    {
+        _confirmationModal.Open();
+        _confirmationModal.FunctionConfirm = async () =>
+        {
+            var httpResponse = await Repository.Delete($"api/peliculas/{film.Id}");
+            if (httpResponse.Error)
+            {
+                await ShowMessages.ShowErrorMessage(await httpResponse.GetBody());
+            }
+            else
+            {
+                Films.Remove(film);
+                StateHasChanged();
+            }
+        };
+    }
+
+}

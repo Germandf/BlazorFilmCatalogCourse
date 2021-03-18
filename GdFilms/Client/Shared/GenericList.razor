@@ -1,0 +1,53 @@
+﻿@typeparam Tparam
+
+@if (TList == null)
+{
+    @if (LoadingItems == null)
+    {
+        <h4>Cargando...</h4>
+    }
+    else
+    {
+        @LoadingItems
+    }
+}
+else if (TList.Count() == 0)
+{
+    @if (NoItemsToShow == null)
+    {
+        <h4>No hay items para mostrar</h4>
+    }
+    else
+    {
+        @NoItemsToShow
+    }
+}
+else
+{
+    if (ItemsToShow != null)
+    {
+        foreach (var item in TList)
+        {
+            @ItemsToShow(item)
+        }
+    }
+    else
+    {
+        @ItemsToShowComplete
+    }
+}
+
+@code {
+
+    [Parameter]
+    public RenderFragment LoadingItems { get; set; }
+    [Parameter]
+    public RenderFragment NoItemsToShow { get; set; }
+    [Parameter]
+    public RenderFragment<Tparam> ItemsToShow { get; set; }
+    [Parameter]
+    public RenderFragment ItemsToShowComplete { get; set; }
+    [Parameter]
+    public List<Tparam> TList { get; set; }
+
+}

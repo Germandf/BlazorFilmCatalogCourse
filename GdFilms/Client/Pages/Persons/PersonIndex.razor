@@ -1,0 +1,81 @@
+﻿@page "/personas"
+@inject IRepository Repository
+@inject IShowMessages ShowMessages
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Índice Personas</h3>
+
+<div class="form-group">
+    <a class="btn btn-info" href="personas/crear">Crear persona</a>
+</div>
+
+<GenericList TList="People">
+    <ItemsToShowComplete>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Nombre</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var person in People)
+                {
+                    <tr>
+                        <td>
+                            <a href="personas/editar/@person.Id" class="btn btn-primary">Editar</a>
+                            <button @onclick="() => Delete(person)" class="btn btn-danger">Eliminar</button>
+                        </td>
+                        <td>@person.Name</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </ItemsToShowComplete>
+</GenericList>
+
+<Pagination CurrentPage="_currentPage" ChangeSelectedPage="ChangeSelectedPage" TotalPages="_totalPages" />
+
+@code {
+
+    public List<Person> People { get; set; }
+
+    private int _currentPage = 1;
+    private int _totalPages;
+
+    protected async override Task OnInitializedAsync()
+    {
+        await GetAll();
+    }
+
+    private async Task ChangeSelectedPage(int page)
+    {
+        _currentPage = page;
+        await GetAll(page);
+    }
+
+    private async Task GetAll(int page = 1)
+    {
+        var httpResponse = await Repository.Get<List<Person>>($"api/personas?page={page}");
+        if (!httpResponse.Error)
+        {
+            People = httpResponse.Response;
+            var counting = httpResponse.HttpResponseMessage.Headers.GetValues("counting").FirstOrDefault();
+            _totalPages = int.Parse(httpResponse.HttpResponseMessage.Headers.GetValues("totalPages").FirstOrDefault());
+        }
+    }
+
+    private async Task Delete(Person person)
+    {
+        var httpResponse = await Repository.Delete($"api/personas/{person.Id}");
+        if (httpResponse.Error)
+        {
+            await ShowMessages.ShowErrorMessage(await httpResponse.GetBody());
+        }
+        else
+        {
+            await GetAll();
+        }
+    }
+
+}

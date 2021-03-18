@@ -1,0 +1,48 @@
+﻿@page "/ingreso"
+@inject IRepository Repository
+@inject NavigationManager NavigationManager
+@inject ILoginService LoginService
+@inject IShowMessages ShowMessages
+
+<h3>Ingreso</h3>
+
+<EditForm Model="_userInfoDTO" OnValidSubmit="LogInUser">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label>Email:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="_userInfoDTO.Email" />
+            <ValidationMessage For="() => _userInfoDTO.Email" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Contraseña:</label>
+        <div>
+            <InputPassword class="form-control" @bind-Value="_userInfoDTO.Password" />
+            <ValidationMessage For="() => _userInfoDTO.Password" />
+        </div>
+    </div>
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Ingresar</button>
+    </div>
+</EditForm>
+
+@code {
+
+    private UserInfoDTO _userInfoDTO = new UserInfoDTO();
+
+    private async Task LogInUser()
+    {
+        var httpResponse = await Repository.Post<UserInfoDTO, UserTokenDTO>("api/cuentas/ingresar", _userInfoDTO);
+        if (httpResponse.Error)
+        {
+            await ShowMessages.ShowErrorMessage(await httpResponse.GetBody());
+        }
+        else
+        {
+            await LoginService.Login(httpResponse.Response);
+            NavigationManager.NavigateTo("");
+        }
+    }
+
+}

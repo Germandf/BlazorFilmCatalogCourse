@@ -1,0 +1,34 @@
+﻿@inherits LayoutComponentBase
+@inject TokenRenewer TokenRenewer
+@inject IJSRuntime js
+@inject NavigationManager NavigationManager
+
+<div class="main">
+    <NavMenu />
+    <section class="container">
+        @Body
+    </section>
+</div>
+
+@code{
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationState { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        await js.StartInactiveTime(DotNetObjectReference.Create(this));
+        TokenRenewer.Start();
+    }
+
+    [JSInvokable]
+    public async Task Logout()
+    {
+        var authState = await AuthenticationState;
+        if (authState.User.Identity.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("salir");
+        }
+    }
+
+}

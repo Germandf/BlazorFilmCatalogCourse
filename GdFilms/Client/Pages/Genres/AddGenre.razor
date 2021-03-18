@@ -1,0 +1,29 @@
+﻿@page "/generos/crear"
+@inject IRepository Repository
+@inject NavigationManager NavigationManager
+@inject IShowMessages ShowMessages
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Crear Género</h3>
+
+<GenreForm Genre="_genre" OnValidSubmit="Create" />
+
+@code {
+
+    private Genre _genre = new Genre();
+
+    private async Task Create()
+    {
+        var httpResponse = await Repository.Post("api/generos", _genre);
+        if (httpResponse.Error)
+        {
+            var body = await httpResponse.GetBody();
+            await ShowMessages.ShowErrorMessage(body);
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/generos");
+        }
+    }
+
+}

@@ -1,0 +1,67 @@
+﻿@page "/peliculas/editar/{Id:int}"
+@inject IRepository Repository
+@inject IShowMessages ShowMessages
+@inject NavigationManager NavigationManager
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Editar Película</h3>
+
+@if (_film == null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <FilmForm Film="_film" OnValidSubmit="Edit"
+              SelectedGenres="_selectedGenres"
+              NotSelectedGenres="_notSelectedGenres"
+              SelectedActors="_selectedActors" />
+}
+
+@code {
+
+    [Parameter]
+    public int Id { get; set; }
+    private List<Genre> _selectedGenres;
+    private List<Genre> _notSelectedGenres;
+    private List<Person> _selectedActors;
+    private Film _film;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var httpResponse = await Repository.Get<EditFilmDTO>($"api/peliculas/editar/{Id}");
+        if (httpResponse.Error)
+        {
+            if (httpResponse.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                NavigationManager.NavigateTo("peliculas");
+            }
+            else
+            {
+                await ShowMessages.ShowErrorMessage(await httpResponse.GetBody());
+            }
+        }
+        else
+        {
+            var model = httpResponse.Response;
+            _selectedGenres = model.SelectedGenres;
+            _notSelectedGenres = model.NotSelectedGenres;
+            _selectedActors = model.People;
+            _film = model.Film;
+        }
+    }
+
+    private async Task Edit()
+    {
+        var httpResponse = await Repository.Put("api/peliculas", _film);
+        if (httpResponse.Error)
+        {
+            await ShowMessages.ShowErrorMessage(await httpResponse.GetBody());
+        }
+        else
+        {
+            NavigationManager.NavigateTo($"peliculas/{Id}");
+        }
+    }
+
+}

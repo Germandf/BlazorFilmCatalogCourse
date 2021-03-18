@@ -1,0 +1,70 @@
+﻿@page "/usuarios/editar/{Id}"
+@inject IRepository Repository 
+@inject IShowMessages ShowMessages 
+
+<h3>Editar Usuario</h3>
+
+<div class="form-inline">
+
+</div>
+<select class="form-control mb-2 mr-sm-2" @bind="_selectedRole">
+    <option value="0">Seleccione un rol</option>
+    @foreach (var role in _roles)
+    {
+        <option value="@role.Name">@role.Name</option>
+    }
+</select>
+
+<button class="btn btn-info mb-2 mr-sm-2" @onclick="AddRole">Añadir Rol</button>
+<button class="btn btn-danger mb-2 mr-sm-2" @onclick="RemoveRole">Remover Rol</button>
+
+@code {
+
+    [Parameter]
+    public string Id { get; set; }
+    private List<RoleDTO> _roles = new List<RoleDTO>();
+    private string _selectedRole = "0";
+
+    protected async override Task OnInitializedAsync()
+    {
+        var httpResponse = await Repository.Get<List<RoleDTO>>("api/usuarios/roles");
+        if (httpResponse.Error)
+        {
+            await ShowMessages.ShowErrorMessage(await httpResponse.GetBody());
+        }
+        else
+        {
+            _roles = httpResponse.Response;
+        }
+    }
+
+    private async Task AddRole()
+    {
+        await EditRole("api/usuarios/agregarRol");
+    }
+
+    private async Task RemoveRole()
+    {
+        await EditRole("api/usuarios/removerRol");
+    }
+
+    private async Task EditRole(string url)
+    {
+        if(_selectedRole == "0")
+        {
+            await ShowMessages.ShowErrorMessage("Debe seleccionar un rol");
+            return;
+        }
+        var roleDTO = new EditRoleDTO() { RoleId = _selectedRole, UserId = Id };
+        var httpResponse = await Repository.Post<EditRoleDTO>(url, roleDTO);
+        if (httpResponse.Error)
+        {
+            await ShowMessages.ShowErrorMessage(await httpResponse.GetBody());
+        }
+        else
+        {
+            await ShowMessages.ShowSuccessMessage("Operación realizada");
+        }
+    }
+
+}

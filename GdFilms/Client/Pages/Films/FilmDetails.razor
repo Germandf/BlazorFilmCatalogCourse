@@ -1,0 +1,97 @@
+﻿@page "/peliculas/{Id:int}"
+@page "/peliculas/{Id:int}/{Name}"
+@inject IRepository Repository
+@inject NavigationManager NavigationManager
+@inject IShowMessages ShowMessages
+
+@if (_model == null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <h2>@_model.Film.Title (@_model.Film.ReleaseDate.Value.ToString("yyyy"))</h2>
+    for (int i = 0; i < _model.Genres.Count; i++)
+    {
+        @genreLink(_model.Genres[i])
+        if (i < _model.Genres.Count - 1)
+        {
+            <text>, </text>
+        }
+    }
+    <text> | </text> <span>@_model.Film.ReleaseDate.Value.ToString("dd MMM yyyy")</span>
+    <text> | Promedio: </text> @_model.AverageVote.ToString("0.#") <text>/5 | Tu voto: </text> <Rating MaxScore="5" SelectedScore="_model.UserVote" OnVote="Vote" />
+    <div style="display: flex;">
+        <span style="display: inline-block; margin-right: 5px;"><img src="@_model.Film.Image" style="width: 225px; height: 315px;" /></span>
+        <iframe width="560" height="315" src="@_model.Film.Trailer" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <div style="margin-top: 10px;">
+        <h3>Resumen</h3>
+        <div>
+            <ShowMarkdown MarkdownContent="@_model.Film.Summary" />
+        </div>
+    </div>
+    <div style="margin-top: 10px;">
+        <h3>Actores</h3>
+        <div style="display: flex; flex-direction: column;">
+            @foreach (var person in _model.People)
+            {
+                <div style="margin-bottom: 2px;">
+                    <img style="width: 50px;" src="@person.Photo" />
+                    <span style="display: inline-block; width: 200px;">
+                        <a href="/persona/@person.Id/@person.Name.Replace(" ", "-")">@person.Name</a>
+                    </span>
+                    <span style="display: inline-block; width: 45px;">...</span>
+                    <span>@person.Character</span>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public int Id { get; set; }
+    [Parameter]
+    public string Name { get; set; }
+    private FilmDetailsDTO _model;
+    private RenderFragment<Genre> genreLink = (genre) =>@<a href="peliculas/buscar?generoid=@genre.Id">@genre.Name</a>;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var httpResponse = await Repository.Get<FilmDetailsDTO>($"api/peliculas/{Id}");
+        if (httpResponse.Error)
+        {
+            if (httpResponse.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                NavigationManager.NavigateTo("");
+            }
+            else
+            {
+                var errorMessage = await httpResponse.GetBody();
+                await ShowMessages.ShowErrorMessage(errorMessage);
+            }
+        }
+        else
+        {
+            _model = httpResponse.Response;
+        }
+    }
+
+    private async Task Vote(int selectedScore)
+    {
+        _model.UserVote = selectedScore;
+        var filmVote = new FilmVote() { Vote = selectedScore, FilmId = Id };
+        var httpResponse = await Repository.Post("api/votos", filmVote);
+        if (httpResponse.Error)
+        {
+            await ShowMessages.ShowErrorMessage("Hubo un error al procesar el voto");
+        }
+        else
+        {
+            await ShowMessages.ShowSuccessMessage("Su voto ha sido recibido con éxito");
+        }
+    }
+
+}

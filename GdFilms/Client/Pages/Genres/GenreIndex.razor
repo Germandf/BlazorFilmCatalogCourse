@@ -1,0 +1,65 @@
+﻿@page "/generos"
+@inject IRepository Repository
+@inject IShowMessages ShowMessages
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Géneros</h3>
+
+<div class="form-group">
+    <a class="btn btn-info" href="generos/crear">Agregar género</a>
+</div>
+
+<GenericList TList="Genres">
+    <ItemsToShowComplete>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Nombre</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var genre in Genres)
+                {
+                    <tr>
+                        <td>
+                            <a href="/generos/editar/@genre.Id" class="btn btn-primary">Editar</a>
+                            <button @onclick="() => Delete(genre)" class="btn btn-danger">Eliminar</button>
+                        </td>
+                        <td>@genre.Name</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </ItemsToShowComplete>
+</GenericList>
+
+@code {
+
+    public List<Genre> Genres { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        await GetAll();
+    }
+
+    private async Task GetAll()
+    {
+        var httpResponse = await Repository.Get<List<Genre>>("api/generos");
+        Genres = httpResponse.Response;
+    }
+
+    private async Task Delete(Genre genre)
+    {
+        var httpResponse = await Repository.Delete($"api/generos/{genre.Id}");
+        if (httpResponse.Error)
+        {
+            await ShowMessages.ShowErrorMessage(await httpResponse.GetBody());
+        }
+        else
+        {
+            await GetAll();
+        }
+    }
+
+}

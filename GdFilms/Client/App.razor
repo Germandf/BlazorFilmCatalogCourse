@@ -1,0 +1,19 @@
+<Router AppAssembly="@typeof(Program).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+            <Authorizing>
+                <text>Autorizando...</text>
+            </Authorizing>
+            <NotAuthorized>
+                <text>No tienes permiso para acceder a este contenido</text>
+            </NotAuthorized>
+        </AuthorizeRouteView>
+    </Found>
+    <NotFound>
+        <CascadingAuthenticationState>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <NotFound />
+            </LayoutView>
+        </CascadingAuthenticationState>
+    </NotFound>
+</Router>

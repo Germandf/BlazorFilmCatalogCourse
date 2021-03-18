@@ -1,0 +1,15 @@
+﻿@page "/salir"
+@inject NavigationManager NavigationManager
+@inject ILoginService LoginService
+
+<p>Saliendo...</p>
+
+@code {
+
+    protected async override Task OnInitializedAsync()
+    {
+        await LoginService.Logout();
+        NavigationManager.NavigateTo("");
+    }
+
+}

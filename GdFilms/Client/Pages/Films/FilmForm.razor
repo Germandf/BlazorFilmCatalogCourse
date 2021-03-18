@@ -1,0 +1,115 @@
+﻿@inject IRepository Repository
+
+<EditForm Model="Film" OnValidSubmit="OnDataAnnotationsValidated">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label>Título:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="Film.Title" />
+            <ValidationMessage For="() => Film.Title" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>En cartelera:</label>
+        <div>
+            <InputCheckbox @bind-Value="Film.OnBillboard" />
+            <ValidationMessage For="() => Film.OnBillboard" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Trailer:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="Film.Trailer" />
+            <ValidationMessage For="() => Film.Trailer" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Fecha de lanzamiento:</label>
+        <div>
+            <InputDate class="form-control" @bind-Value="Film.ReleaseDate" />
+            <ValidationMessage For="() => Film.ReleaseDate" />
+        </div>
+    </div>
+    <div class="form-group form-markdown">
+        <InputMarkdown @bind-Value="Film.Summary"
+                       For="() => Film.Summary"
+                       Label="Resumen" />
+    </div>
+    <div class="form-group">
+        <InputImage Label="Imagen" SaveSelectedImage="GetSelectedImage" ImageUrl="@_imageUrl" />
+    </div>
+    <div class="form-group">
+        <label>Géneros:</label>
+        <div>
+            <MultipleSelector Selected="Selected" NotSelected="NotSelected" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Actores:</label>
+        <div>
+            <MultipleSelectorTypeahead Context="person"
+                                       SearchMethod="GetActorsByName" 
+                                       SelectedItems="SelectedActors">
+                <MyListTemplate>
+                    @person.Name / <input type="text" placeholder="Personaje" @bind="person.Character" />
+                </MyListTemplate>
+                <MyResultTemplate>
+                    <img style="width: 50px" src="@person.Photo" />
+                    @person.Name
+                </MyResultTemplate>
+            </MultipleSelectorTypeahead>
+        </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Confirmar</button>
+</EditForm>
+
+@code {
+
+    [Parameter]
+    public Film Film { get; set; }
+    [Parameter]
+    public EventCallback OnValidSubmit { get; set; }
+    [Parameter]
+    public List<Genre> SelectedGenres { get; set; } = new List<Genre>();
+    [Parameter]
+    public List<Genre> NotSelectedGenres { get; set; } = new List<Genre>();
+    [Parameter]
+    public List<Person> SelectedActors { get; set; } = new List<Person>();
+
+    private List<MultipleSelectorModel> Selected { get; set; } = new List<MultipleSelectorModel>();
+    private List<MultipleSelectorModel> NotSelected { get; set; } = new List<MultipleSelectorModel>();
+
+    private string _imageUrl;
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrEmpty(Film.Image))
+        {
+            _imageUrl = Film.Image;
+            Film.Image = null;
+        }
+        Selected = SelectedGenres.Select(x => new MultipleSelectorModel(x.Id.ToString(), x.Name)).ToList();
+        NotSelected = NotSelectedGenres.Select(x => new MultipleSelectorModel(x.Id.ToString(), x.Name)).ToList();
+    }
+
+    private void GetSelectedImage(string base64Image)
+    {
+        Film.Image = base64Image;
+        _imageUrl = null;
+    }
+
+    private async Task<IEnumerable<Person>> GetActorsByName(string searchText)
+    {
+        var httpResponse = await Repository.Get<List<Person>>($"api/personas/buscar/{searchText}");
+        return httpResponse.Response;
+    }
+
+    private async Task OnDataAnnotationsValidated()
+    {
+        Film.FilmGenres = Selected.Select(x => new FilmGenre { GenreId = int.Parse(x.Key) }).ToList();
+        Film.FilmActors = SelectedActors.Select(x => new FilmActor { PersonId = x.Id, Character = x.Character }).ToList();
+        if(!string.IsNullOrWhiteSpace(Film.Image)) { _imageUrl = null; }
+        await OnValidSubmit.InvokeAsync(null);
+    }
+
+}

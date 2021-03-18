@@ -1,0 +1,57 @@
+﻿@page "/personas/editar/{Id:int}"
+@inject IRepository Repository
+@inject IShowMessages ShowMessages
+@inject NavigationManager NavigationManager
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Editar Persona</h3>
+
+@if (_person == null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <PersonForm Person="_person" OnValidSubmit="Edit" />
+}
+
+@code {
+
+    [Parameter]
+    public int Id { get; set; }
+    private Person _person;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var httpResponse = await Repository.Get<Person>($"api/personas/{Id}");
+        if (httpResponse.Error)
+        {
+            if (httpResponse.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                NavigationManager.NavigateTo("personas");
+            }
+            else
+            {
+                await ShowMessages.ShowErrorMessage(await httpResponse.GetBody());
+            }
+        }
+        else
+        {
+            _person = httpResponse.Response;
+        }
+    }
+
+    private async Task Edit()
+    {
+        var httpResponse = await Repository.Put("api/personas", _person);
+        if (httpResponse.Error)
+        {
+            await ShowMessages.ShowErrorMessage(await httpResponse.GetBody());
+        }
+        else
+        {
+            NavigationManager.NavigateTo("personas");
+        }
+    }
+
+}
