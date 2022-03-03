@@ -1,8 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30907.101
-MinimumVisualStudioVersion = 10.0.40219.1
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.0
+MinimumVisualStudioVersion = 16.11.5
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorFilmCatalogCourse.Server", "src\Server\BlazorFilmCatalogCourse.Server.csproj", "{45A0639D-3C85-4029-A45D-5A7088CDC977}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorFilmCatalogCourse.Client", "src\Client\BlazorFilmCatalogCourse.Client.csproj", "{3E6D4439-8448-42C1-BF7F-39F230C67E42}"
